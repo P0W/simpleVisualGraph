@@ -1,0 +1,43 @@
+<head>
+
+<body>
+   <style>
+
+    
+
+      .axis line, .axis path {
+         stroke-opacity: 0.3;
+         shape-rendering: crispEdges;
+         fill-opacity: unset;
+      }
+
+      .view {
+         fill: none;
+         stroke: #ffffff;
+      }
+
+
+   </style>
+
+   <div id="xyplotContainer" />
+   <button> Reset </button>
+
+</body>
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.14.1/dojo/dojo.js"></script>
+
+<script>
+
+   require(["dojo/ready", "./View.js"], function (ready, View) {
+      ready(function () {
+         // This function won't run until the DOM has loaded and other modules that register have run.
+
+         console.log("Hello from Visual Studio Code");
+
+         var x = View();
+
+
+      });
+   });
+</script>
+
+</head>
