@@ -1,3 +1,3 @@
 # simpleVisualGraph
 
-Learning d3 and dojo javascript framwork
+Learning d3 and dojo javascript framework
