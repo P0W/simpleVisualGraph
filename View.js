@@ -7,8 +7,9 @@ define([
    return declare(null, {
 
       constructor: function () {
-         var width = 800;
-         var height = 600;
+         var width = 1500;
+         var height = 800;
+
 
          var margin = {
             top: 25,
@@ -17,81 +18,103 @@ define([
             right: 20
          };
 
+         var adjustedHeight = this.getAdjustedHeight(height, margin);
+         var adjustedWidth = this.getAdjustedWidth(width, margin);
 
          this.data = [];
 
-         for (var i = 0; i <= 50; ++i) {
-            this.data.push({ x: i, y: 50 * Math.random() });
+         for (var i = 0; i <= 25; i += 0.15) {
+            this.data.push({ x: .0025 * i, y: 150 * Math.sin(i) });
          }
 
-         var svg = d3.select('#xyplotContainer')
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
+
 
          var xScale = d3.scaleLinear()
-            .range([0, width - margin.left - margin.right])
-         //.nice()
+            .range([0, adjustedWidth])
          var xScaleTemp = d3.scaleLinear()
-            .range([0, width - margin.left - margin.right])
+            .range([0, adjustedWidth])
 
-         xScale.domain(d3.extent(this.data, function (d) { return d.x; }))
-            .nice();
 
          var yScale = d3.scaleLinear()
-            .range([height - margin.bottom - margin.top, 0])
-         //.nice()
-
-         yScale.domain([0, d3.max(this.data, function (d) { return d.y; })])
-            .nice();
+            .range([adjustedHeight, 0])
+         var yScaleTemp = d3.scaleLinear()
+            .range([adjustedHeight, 0])
 
 
          var xAxis = d3.axisBottom(xScale)
-            .ticks((width + 2) / (height + 2) * 10)
-            .tickSize(-height)
+            .ticks((adjustedWidth + 2) / (adjustedHeight + 2) * 10)
+            .tickSize(-adjustedHeight)
 
 
          var yAxis = d3.axisLeft(yScale)
             .ticks(5)
-            .tickSize(-width)
+            .tickSize(-adjustedWidth)
+
+         xScale.domain(d3.extent(this.data, function (d) { return d.x; }))
+         yScale.domain([d3.min(this.data, function (d) { return d.y; }), d3.max(this.data, function (d) { return d.y; })])
+         xScaleTemp.domain(xScale.domain());
+         yScaleTemp.domain(yScale.domain())
+
 
          // define the line
          var valueline = d3.line()
             .x(function (d) { return xScale(d.x); })
             .y(function (d) { return yScale(d.y); })
 
+         // Create a scalable vector graphic as a canvas to draw things on
+         var svg = d3.select('#xyplotContainer')
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-         var view = svg.append("rect")
-            .attr("class", "view")
-            .attr("width", width - 1)
-            .attr("height", height - 1);
+         // Add a clipping container to the SVG
+         svg.append("defs").append("svg:clipPath")
+            .attr("id", "clip")
+            .append("svg:rect")
+            .attr("width", adjustedWidth)
+            .attr("height", adjustedHeight)
+            .attr("x", 0)
+            .attr("y", 0);
 
-         var gX = svg.append("g")
+         // Append a group to the SVG
+         var focus = svg.append("g")
+            .attr("class", "focus")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+         // var view = focus.append("rect")
+         //    .attr("class", "view")
+         //    .attr("width", adjustedWidth)
+         //    .attr("height", adjustedHeight);
+
+         // Add the X-Axis
+         var gX = focus.append("g")
             .attr("class", "axis axis--x")
-            .attr('transform', 'translate(' + margin.left + ',' + (height - margin.bottom) + ')')
+            .attr('transform', 'translate(' + margin.left + ',' + (adjustedHeight) + ')')
             .call(xAxis);
 
-         var gY = svg.append("g")
+         // Add the Y-Axis
+         var gY = focus.append("g")
             .attr("class", "axis axis--y")
-            .attr('transform', 'translate(' + margin.left + ',' + (margin.bottom) + ')')
             .call(yAxis);
 
-         // add the valueline path.
-         var linegraph = svg.append("path")
+         // Add the dataset, and constrain to the clipping container
+         var linegraph = focus.append("path")
             .data([this.data])
             .attr("class", "linegraph")
+            .attr("clip-path", "url(#clip)")
             .attr("d", valueline);
 
          // draw dots
-         svg.selectAll(".dot")
-            .data(this.data)
-            .enter().append("circle")
-            .attr("class", "dot")
-            .attr("r", 3.5)
-            .attr("cx", function (d) { return xScale(d.x); })
-            .attr("cy", function (d) { return yScale(d.y); })
+         // focus.selectAll(".dot")
+         //    .data(this.data)
+         //    .enter().append("circle")
+         //    .attr("class", "dot")
+         //    .attr("clip-path", "url(#clip)")
+         //    .attr("r", 2.5)
+         //    .attr("cx", function (d) { return xScale(d.x); })
+         //    .attr("cy", function (d) { return yScale(d.y); })
 
-         d3.select("button")
+         d3.select("#resetZoomButton")
             .on("click", function () {
                svg.transition()
                   .duration(1500)
@@ -99,26 +122,36 @@ define([
 
             });
 
+         // Add Zooming controls
          var zoom = d3.zoom()
+            .scaleExtent([1, Infinity])
+            .extent([[0, 0], [adjustedWidth, adjustedHeight]])
             .on("zoom", function () {
                var t = d3.event.transform;
-
-               var _x = xAxis.scale(d3.event.transform.rescaleX(xScale));
-
-               gX.call(xAxis.scale(d3.event.transform.rescaleX(xScale)));
-               gY.call(yAxis.scale(d3.event.transform.rescaleY(yScale)));
-
-               var neValue = d3.line()
-                  .x(function (d) { return _x(d.x); })
-                  .y(function (d) { return yScale(d.y); })
-
                d3.selectAll(".dot").attr("transform", t);
-               linegraph.select(".linegraph").attr("d", neValue);
+
+               xScale.domain(t.rescaleX(xScaleTemp).domain());
+               yScale.domain(t.rescaleY(yScaleTemp).domain());
+               gX.call(xAxis);
+               gY.call(yAxis);
+               linegraph.attr("d", valueline);
             })
 
          svg.call(zoom);
 
+      },
+
+      getAdjustedHeight: function (height, margin) {
+         return height - margin.bottom - margin.top;
+      },
+
+      getAdjustedWidth: function (width, margin) {
+         return width - margin.left - margin.right;
       }
+
    });
+
+
+
 
 });

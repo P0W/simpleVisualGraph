@@ -17,12 +17,12 @@
 
       .view {
          fill: none;
-         stroke:sienna;
+         stroke-opacity: 0.3;
       }
    </style>
 
    <div id="xyplotContainer" />
-   <button> Reset </button>
+   <button id="resetZoomButton"> Reset </button>
 
 </body>
 <script src="//ajax.googleapis.com/ajax/libs/dojo/1.14.1/dojo/dojo.js"></script>
@@ -32,9 +32,6 @@
    require(["dojo/ready", "./View.js"], function (ready, View) {
       ready(function () {
          // This function won't run until the DOM has loaded and other modules that register have run.
-
-         console.log("Hello from Visual Studio Code");
-
          var x = View();
 
 
