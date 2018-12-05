@@ -6,28 +6,13 @@ define([
 
    return declare(null, {
 
-      constructor: function () {
-         var width = 1500;
-         var height = 800;
+      constructor: function (height, width, margin, data) {
 
-
-         var margin = {
-            top: 25,
-            left: 20,
-            bottom: 25,
-            right: 20
-         };
 
          var adjustedHeight = this.getAdjustedHeight(height, margin);
          var adjustedWidth = this.getAdjustedWidth(width, margin);
 
-         this.data = [];
-
-         for (var i = 0; i <= 25; i += 0.15) {
-            this.data.push({ x: .0025 * i, y: 150 * Math.sin(i) });
-         }
-
-
+         this.data = data;
 
          var xScale = d3.scaleLinear()
             .range([0, adjustedWidth])
@@ -42,12 +27,12 @@ define([
 
 
          var xAxis = d3.axisBottom(xScale)
-            .ticks((adjustedWidth + 2) / (adjustedHeight + 2) * 10)
-            .tickSize(-adjustedHeight)
+         //.ticks((adjustedWidth + 2) / (adjustedHeight + 2) * 10)
+         //.tickSize(-adjustedHeight)
 
 
          var yAxis = d3.axisLeft(yScale)
-            .ticks(5)
+            .ticks(10)
             .tickSize(-adjustedWidth)
 
          xScale.domain(d3.extent(this.data, function (d) { return d.x; }))
@@ -105,14 +90,18 @@ define([
             .attr("d", valueline);
 
          // draw dots
-         // focus.selectAll(".dot")
-         //    .data(this.data)
-         //    .enter().append("circle")
-         //    .attr("class", "dot")
-         //    .attr("clip-path", "url(#clip)")
-         //    .attr("r", 2.5)
-         //    .attr("cx", function (d) { return xScale(d.x); })
-         //    .attr("cy", function (d) { return yScale(d.y); })
+         focus.append("g")
+            .attr("clip-path", "url(#clip)")
+            .selectAll(".dot")
+            .data(this.data)
+            .enter().
+            append("circle")
+            .attr("class", "dot")
+            .attr('fill-opacity', 0.5)
+            //.attr('fill', 'dark-pink')
+            .attr("r", 3.5)
+            .attr("cx", function (d) { return xScale(d.x); })
+            .attr("cy", function (d) { return yScale(d.y); })
 
          d3.select("#resetZoomButton")
             .on("click", function () {
@@ -121,6 +110,59 @@ define([
                   .call(zoom.transform, d3.zoomIdentity);
 
             });
+
+         var theTrendLine = d3.line()
+            .x(function (d) {
+               return xScale(d.x);
+            })
+            .y(function (d) {
+               return yScale(d.yhat);
+            });
+
+         var theTrendLineGraph = focus.append("path")
+            .datum(this.bestfitLine(data))
+            .attr("class", "trendline")
+            .attr("clip-path", "url(#clip)")
+            .attr("d", theTrendLine);
+
+         // define and add droplines
+         var droplineX = focus.append("line")
+            .attr("class", "hidden")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .style("stroke", "#7e7e7e");
+         var droplineY = focus.append("line")
+            .attr("class", "hidden")
+            .attr("y1", 0)
+            .attr("y2", height)
+            .style("stroke", "#7e7e7e");
+
+         // add rectangle overlay to catch pointer events
+         focus.append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .attr('fill', 'none')
+            .attr("clip-path", "url(#clip)")
+            .style('pointer-events', 'all')
+            .style('cursor', 'crosshair')
+            .on("mouseover", function () { // show the droplines
+               droplineX.classed("hidden", false);
+               droplineY.classed("hidden", false);
+            })
+            .on("mousemove", function () { // update droplines
+               var mx = d3.mouse(this)[0],
+                  my = d3.mouse(this)[1];
+               droplineX
+                  .attr("y1", my)
+                  .attr("y2", my);
+               droplineY
+                  .attr("x1", mx)
+                  .attr("x2", mx);
+            })
+            .on("mouseout", function () { // hide droplines
+               droplineX.classed("hidden", true);
+               droplineY.classed("hidden", true);
+            })
 
          // Add Zooming controls
          var zoom = d3.zoom()
@@ -135,9 +177,13 @@ define([
                gX.call(xAxis);
                gY.call(yAxis);
                linegraph.attr("d", valueline);
+
+               theTrendLineGraph.attr("d", theTrendLine);
+
             })
 
          svg.call(zoom);
+
 
       },
 
@@ -147,11 +193,70 @@ define([
 
       getAdjustedWidth: function (width, margin) {
          return width - margin.left - margin.right;
+      },
+
+      bestfitLine: function (data) {
+         var x = [];
+         var y = [];
+         var n = data.length;
+         var x_mean = 0;
+         var y_mean = 0;
+         var term1 = 0;
+         var term2 = 0;
+         // create x and y values
+
+         data.forEach(function (d, i) {
+            y.push(d['y']);
+            x.push(d['x']);
+         });
+
+         // calculate mean x and y
+         x_mean = d3.mean(x);
+         y_mean = d3.mean(y);
+
+         // Pearson Corelation Coefficient
+         var sq_dev = [];
+         for (var i = 0; i < x.length; i++) {
+            sq_dev[i] = (x[i] - x_mean) * (y[i] - y_mean);
+         }
+         var covar = d3.sum(sq_dev) / (x.length - 1);
+         var karlPearson = covar / (d3.deviation(x) * d3.deviation(y));
+
+         console.log(karlPearson);
+
+         // calculate coefficients
+         var xr = 0;
+         var yr = 0;
+         for (var i = 0; i < x.length; i++) {
+            xr = x[i] - x_mean;
+            yr = y[i] - y_mean;
+            term1 += xr * yr;
+            term2 += xr * xr;
+
+         }
+         var b1 = term1 / term2;
+         var b0 = y_mean - (b1 * x_mean);
+         // perform regression 
+
+         var yhat = [];
+         // fit line using coeffs
+         for (i = 0; i < x.length; i++) {
+            yhat.push(b0 + (x[i] * b1));
+         }
+
+         var trendLine = [];
+         for (i = 0; i < y.length; i++) {
+            trendLine.push({
+               "yhat": yhat[i],
+               "y": y[i],
+               "x": x[i]
+            })
+         }
+
+         return (trendLine);
       }
 
+
    });
-
-
-
 
 });

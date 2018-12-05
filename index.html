@@ -4,24 +4,63 @@
    <style>
       .linegraph {
          fill: none;
-         stroke: steelblue;
+         stroke: cornflowerblue;
          stroke-width: 2px;
       }
 
       .axis line,
       .axis path {
-         stroke-opacity: 0.3;
+         stroke-opacity: 0.2;
          shape-rendering: crispEdges;
          fill-opacity: unset
       }
 
-      .view {
+      /* .view {
          fill: none;
          stroke-opacity: 0.3;
+      } */
+
+
+      /* .canvas-1 {
+         height: 350px;
+         width: 350px;
+         background-color: #555;
+         stroke: black;
+
+      }
+
+      .canvas-2 {
+         height: 250px;
+         width: 250px;
+         background-color: brown;
+         transform: translate(-60, 0);
+         stroke: black;
+      } */
+
+      .dot {
+         fill: dark-pink;
+         stroke: black;
+         stroke-opacity: 0.6;
+         /* opacity: 1; */
+      }
+
+      .trendline {
+         stroke: brown;
+         stroke-width: 1%;
+         opacity: 0.7;
+      }
+
+      .hidden {
+         display: none;
       }
    </style>
 
-   <div id="xyplotContainer" />
+   <!-- <canvas width="960" height="500"></canvas> -->
+   <div id="xyplotContainer">
+
+
+   </div>
+
    <button id="resetZoomButton"> Reset </button>
 
 </body>
@@ -29,11 +68,36 @@
 
 <script>
 
-   require(["dojo/ready", "./View.js"], function (ready, View) {
+   require(["dojo/ready", "./View.js", "test.js", "./Context2D.js"], function (ready, View, test, Context2D) {
       ready(function () {
-         // This function won't run until the DOM has loaded and other modules that register have run.
-         var x = View();
 
+         data = [];
+         var width = 1200;
+         var height = 600;
+
+
+         var margin = {
+            top: 25,
+            left: 20,
+            bottom: 25,
+            right: 20
+         };
+
+         var noise_factor = 60;
+
+         for (var i = 0; i < 400; i += 0.25) {
+
+            noise = noise_factor * Math.random();
+            noise *= Math.round(Math.random()) == 1 ? 1 : -1;
+            data.push({ y: (i / 2.0 + noise), x: ((i + 1)) });
+            //data.push({ x: (i+1), y: 15 * (i) });
+         }
+
+         console.log("Plotting " + data.length + " Point(s)");
+
+         var x = View(height, width, margin, data);
+         // var t = test();
+         //var t= Context2D( height, width, margin, data);
 
       });
    });
