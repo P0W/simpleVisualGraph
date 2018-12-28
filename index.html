@@ -2,7 +2,7 @@
 
 <body>
    <style>
-      .linegraph {
+      .valueLineGraph {
          fill: none;
          stroke: cornflowerblue;
          stroke-width: 2px;
@@ -12,30 +12,8 @@
       .axis path {
          stroke-opacity: 0.2;
          shape-rendering: crispEdges;
-         fill-opacity: unset
+         fill-opacity: unset;
       }
-
-      /* .view {
-         fill: none;
-         stroke-opacity: 0.3;
-      } */
-
-
-      /* .canvas-1 {
-         height: 350px;
-         width: 350px;
-         background-color: #555;
-         stroke: black;
-
-      }
-
-      .canvas-2 {
-         height: 250px;
-         width: 250px;
-         background-color: brown;
-         transform: translate(-60, 0);
-         stroke: black;
-      } */
 
       .dot {
          fill: dark-pink;
@@ -50,15 +28,13 @@
          opacity: 0.7;
       }
 
-      .hidden {
-         display: none;
+      .focusCircle {
+         fill: darkred;
       }
+
    </style>
 
-   <!-- <canvas width="960" height="500"></canvas> -->
    <div id="xyplotContainer">
-
-
    </div>
 
    <button id="resetZoomButton"> Reset </button>
@@ -67,15 +43,11 @@
 <script src="//ajax.googleapis.com/ajax/libs/dojo/1.14.1/dojo/dojo.js"></script>
 
 <script>
-
-   require(["dojo/ready", "./View.js", "test.js", "./Context2D.js"], function (ready, View, test, Context2D) {
+   require(["dojo/ready", "./View.js"], function (ready, View) {
       ready(function () {
-
          data = [];
          var width = 1200;
          var height = 600;
-
-
          var margin = {
             top: 25,
             left: 20,
@@ -83,22 +55,16 @@
             right: 20
          };
 
-         var noise_factor = 60;
-
-         for (var i = 0; i < 400; i += 0.25) {
-
+         var noise_factor = 80;
+         for (var i = -200; i < 200; i += 5) {
             noise = noise_factor * Math.random();
             noise *= Math.round(Math.random()) == 1 ? 1 : -1;
             data.push({ y: (i / 2.0 + noise), x: ((i + 1)) });
-            //data.push({ x: (i+1), y: 15 * (i) });
+            //data.push({ y: Math.exp(Math.cos(i)), x:  Math.sin(i) });
          }
 
          console.log("Plotting " + data.length + " Point(s)");
-
-         var x = View(height, width, margin, data);
-         // var t = test();
-         //var t= Context2D( height, width, margin, data);
-
+         var x = new View(height, width, margin, data);
       });
    });
 </script>
